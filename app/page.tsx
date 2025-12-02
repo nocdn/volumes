@@ -150,14 +150,6 @@ export default function Home() {
         if (bookmark) {
           window.open(bookmark.url, "_blank");
         }
-      } else if (e.key === "Backspace" && e.metaKey && selectedIndex !== null) {
-        e.preventDefault();
-        const bookmark = filteredBookmarks[selectedIndex];
-        if (bookmark) {
-          // Optimistic delete
-          setDeletedIds((prev) => new Set(prev).add(bookmark._id));
-          deleteBookmark({ id: bookmark._id as Id<"bookmarks"> });
-        }
       } else if (e.key === "c" && e.metaKey && selectedIndex !== null) {
         e.preventDefault();
         const bookmark = filteredBookmarks[selectedIndex];
