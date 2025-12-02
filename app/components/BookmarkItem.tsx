@@ -11,7 +11,7 @@ import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import EditableMenuItem from "./EditableMenuItem";
-import { motion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 
 interface BookmarkItemProps {
   bookmark: {
@@ -27,6 +27,7 @@ interface BookmarkItemProps {
   isSelected?: boolean;
   onMenuOpenChange?: (isOpen: boolean) => void;
   onMouseEnter?: () => void;
+  onDelete?: () => void;
 }
 
 function formatCreationDate(timestamp: number): string {
@@ -48,9 +49,15 @@ export default function BookmarkItem({
   isSelected = false,
   onMenuOpenChange,
   onMouseEnter,
+  onDelete,
 }: BookmarkItemProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [isHoveringDate, setIsHoveringDate] = useState(false);
+
+  const handleDelete = useCallback(() => {
+    onDelete?.();
+  }, [onDelete]);
 
   const handleOpenChange = useCallback(
     (open: boolean) => {
@@ -241,8 +248,41 @@ export default function BookmarkItem({
       <a href={displayUrl} target="_blank" rel="noopener noreferrer">
         {displayTitle}
       </a>
-      <span className="ml-auto text-gray-400 text-sm tabular-nums">
-        {formatCreationDate(bookmark._creationTime)}
+      <span
+        className="ml-auto text-sm tabular-nums relative"
+        onMouseEnter={() => setIsHoveringDate(true)}
+        onMouseLeave={() => setIsHoveringDate(false)}
+      >
+        {/* Invisible spacer to maintain width */}
+        <span className="invisible">
+          {formatCreationDate(bookmark._creationTime)}
+        </span>
+        <AnimatePresence mode="popLayout">
+          {isHoveringDate ? (
+            <motion.span
+              key="delete"
+              initial={{ opacity: 0, filter: "blur(1px)", y: -3 }}
+              animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
+              exit={{ opacity: 0, filter: "blur(1px)", y: 3 }}
+              transition={{ duration: 0.15, ease: "easeInOut" }}
+              className="absolute inset-0 flex items-center justify-center text-[#ED5257] cursor-pointer font-rounded font-medium"
+              onClick={handleDelete}
+            >
+              Delete
+            </motion.span>
+          ) : (
+            <motion.span
+              key="date"
+              initial={{ opacity: 0, filter: "blur(1px)", y: 3 }}
+              animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
+              exit={{ opacity: 0, filter: "blur(1px)", y: -3 }}
+              transition={{ duration: 0.15, ease: "easeInOut" }}
+              className="absolute inset-0 flex items-center justify-center text-gray-400"
+            >
+              {formatCreationDate(bookmark._creationTime)}
+            </motion.span>
+          )}
+        </AnimatePresence>
       </span>
     </motion.div>
   );

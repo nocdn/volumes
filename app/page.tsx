@@ -134,7 +134,7 @@ export default function Home() {
   }
 
   return (
-    <main className="flex flex-col items-center w-screen pt-48 gap-8">
+    <main className="flex flex-col items-center w-screen pt-48 gap-8 pb-24">
       <Search
         onPendingBookmark={addPendingBookmark}
         onBookmarkSaved={removePendingBookmark}
@@ -169,9 +169,17 @@ export default function Home() {
               setActiveMenuId(isOpen ? bookmark._id : null)
             }
             onMouseEnter={() => setSelectedIndex(index)}
+            onDelete={() => {
+              setDeletedIds((prev) => new Set(prev).add(bookmark._id));
+              deleteBookmark({ id: bookmark._id as Id<"bookmarks"> });
+            }}
           />
         ))}
       </div>
+      <div
+        className="bottom-scroll-mask pointer-events-none"
+        aria-hidden="true"
+      />
     </main>
   );
 }
