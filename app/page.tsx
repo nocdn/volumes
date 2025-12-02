@@ -60,6 +60,7 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
+  const [isKeyboardNav, setIsKeyboardNav] = useState(false);
 
   const filteredBookmarks = useMemo(() => {
     if (!bookmarks) return [];
@@ -87,11 +88,13 @@ export default function Home() {
 
       if (e.key === "ArrowDown") {
         e.preventDefault();
+        setIsKeyboardNav(true);
         setSelectedIndex((prev) =>
           prev === null ? 0 : Math.min(prev + 1, filteredBookmarks.length - 1)
         );
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
+        setIsKeyboardNav(true);
         setSelectedIndex((prev) =>
           prev === null ? filteredBookmarks.length - 1 : Math.max(prev - 1, 0)
         );
@@ -168,7 +171,17 @@ export default function Home() {
             onMenuOpenChange={(isOpen) =>
               setActiveMenuId(isOpen ? bookmark._id : null)
             }
-            onMouseEnter={() => setSelectedIndex(index)}
+            onMouseEnter={() => {
+              if (!isKeyboardNav) {
+                setSelectedIndex(index);
+              }
+            }}
+            onMouseMove={() => {
+              if (isKeyboardNav) {
+                setIsKeyboardNav(false);
+                setSelectedIndex(index);
+              }
+            }}
             onDelete={() => {
               setDeletedIds((prev) => new Set(prev).add(bookmark._id));
               deleteBookmark({ id: bookmark._id as Id<"bookmarks"> });

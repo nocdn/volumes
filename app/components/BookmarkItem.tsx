@@ -27,6 +27,7 @@ interface BookmarkItemProps {
   isSelected?: boolean;
   onMenuOpenChange?: (isOpen: boolean) => void;
   onMouseEnter?: () => void;
+  onMouseMove?: () => void;
   onDelete?: () => void;
 }
 
@@ -49,6 +50,7 @@ export default function BookmarkItem({
   isSelected = false,
   onMenuOpenChange,
   onMouseEnter,
+  onMouseMove,
   onDelete,
 }: BookmarkItemProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -192,8 +194,9 @@ export default function BookmarkItem({
     <motion.div
       className={`flex items-center gap-2 -mx-3 px-3 -my-2 py-2 [corner-shape:squircle] rounded-[1.5rem] ${
         isDimmed ? "opacity-[0.65]" : ""
-      } ${isSelected ? "bg-[#EDEDED]" : "hover:bg-[#EDEDED]"}`}
+      } ${isSelected && !isOpen ? "bg-[#EDEDED]" : ""} ${!isOpen ? "hover:bg-[#EDEDED]" : ""}`}
       onMouseEnter={onMouseEnter}
+      onMouseMove={onMouseMove}
     >
       <Popover open={isOpen} onOpenChange={handleOpenChange}>
         <PopoverTrigger asChild>
