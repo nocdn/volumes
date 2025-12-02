@@ -11,10 +11,12 @@ import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import EditableMenuItem from "./EditableMenuItem";
+import { motion } from "motion/react";
 
 interface BookmarkItemProps {
   bookmark: {
     _id: string;
+    _creationTime: number;
     url: string;
     title: string;
     favicon: string;
@@ -22,13 +24,30 @@ interface BookmarkItemProps {
     comment?: string;
   };
   isDimmed?: boolean;
+  isSelected?: boolean;
   onMenuOpenChange?: (isOpen: boolean) => void;
+  onMouseEnter?: () => void;
+}
+
+function formatCreationDate(timestamp: number): string {
+  const date = new Date(timestamp);
+  const now = new Date();
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = date.toLocaleDateString("en-US", { month: "short" });
+  const year = date.getFullYear();
+
+  if (year === now.getFullYear()) {
+    return `${month} ${day}`;
+  }
+  return `${month} ${day}, ${year}`;
 }
 
 export default function BookmarkItem({
   bookmark,
   isDimmed = false,
+  isSelected = false,
   onMenuOpenChange,
+  onMouseEnter,
 }: BookmarkItemProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -131,14 +150,15 @@ export default function BookmarkItem({
   const displayUrl = optimisticUrl ?? bookmark.url;
 
   return (
-    <div
-      className={`flex items-center gap-2 transition-all duration-150 ${
+    <motion.div
+      className={`flex items-center gap-2 -mx-3 px-3 -my-2 py-2 [corner-shape:squircle] rounded-[1.5rem] ${
         isDimmed ? "opacity-[0.65]" : ""
-      }`}
+      } ${isSelected ? "bg-[#EDEDED]" : "hover:bg-[#EDEDED]"}`}
+      onMouseEnter={onMouseEnter}
     >
       <Popover open={isOpen} onOpenChange={handleOpenChange}>
         <PopoverTrigger asChild>
-          <button className="shrink-0 cursor-pointer hover:opacity-70 transition-opacity">
+          <button className="shrink-0 cursor-pointer hover:opacity-70 transition-opacity focus:outline-none">
             <img
               src={bookmark.favicon}
               alt={displayTitle}
@@ -178,6 +198,9 @@ export default function BookmarkItem({
       <a href={displayUrl} target="_blank" rel="noopener noreferrer">
         {displayTitle}
       </a>
-    </div>
+      <span className="ml-auto text-gray-400 text-sm tabular-nums">
+        {formatCreationDate(bookmark._creationTime)}
+      </span>
+    </motion.div>
   );
 }

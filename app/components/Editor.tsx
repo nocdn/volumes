@@ -12,10 +12,11 @@ import suggestion from "./suggestion.js";
 interface EditorProps {
   className?: string;
   onSubmit?: (data: { tags: string[]; text: string; comment: string }) => void;
+  onTextChange?: (text: string) => void;
 }
 
 export default forwardRef<unknown, EditorProps>(
-  ({ className = "", onSubmit }, ref) => {
+  ({ className = "", onSubmit, onTextChange }, ref) => {
     const limit = 280;
 
     const SubmitExtension = Extension.create({
@@ -96,6 +97,34 @@ export default forwardRef<unknown, EditorProps>(
         },
       },
       content: "",
+      onUpdate: ({ editor }) => {
+        // Extract text content (before mentions) similar to submit logic
+        const { doc } = editor.state;
+        const items: { type: "text" | "mention"; content: string }[] = [];
+
+        doc.descendants((node) => {
+          if (node.type.name === "mention") {
+            items.push({ type: "mention", content: node.attrs.id });
+          } else if (node.isText && node.text) {
+            items.push({ type: "text", content: node.text });
+          }
+        });
+
+        const firstMentionIdx = items.findIndex(
+          (item) => item.type === "mention"
+        );
+
+        let text = "";
+        items.forEach((item, idx) => {
+          if (item.type === "text") {
+            if (firstMentionIdx === -1 || idx < firstMentionIdx) {
+              text += item.content;
+            }
+          }
+        });
+
+        onTextChange?.(text.trim());
+      },
     });
 
     useImperativeHandle(ref, () => editor);

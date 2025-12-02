@@ -42,6 +42,15 @@ export const updateBookmark = mutation({
   },
 });
 
+export const deleteBookmark = mutation({
+  args: {
+    id: v.id("bookmarks"),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.delete(args.id);
+  },
+});
+
 export const createBookmark = mutation({
   args: {
     url: v.string(),

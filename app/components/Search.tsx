@@ -16,16 +16,40 @@ interface PendingBookmark {
 interface SearchProps {
   onPendingBookmark?: (bookmark: PendingBookmark) => void;
   onBookmarkSaved?: (id: string) => void;
+  existingUrls?: string[];
+  onSearchChange?: (query: string) => void;
 }
 
 export default function Search({
   onPendingBookmark,
   onBookmarkSaved,
+  existingUrls = [],
+  onSearchChange,
 }: SearchProps) {
   const [inputUrl, setInputUrl] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
-
+  const [alreadyExists, setAlreadyExists] = useState(false);
   const addBookmark = useMutation(api.bookmarks.createBookmark);
+
+  function padUrl(url: string) {
+    if (url.startsWith("https://") || url.startsWith("http://")) {
+      return url;
+    } else {
+      return `https://${url}`;
+    }
+  }
+
+  function handleTextChange(text: string) {
+    setInputUrl(text);
+    onSearchChange?.(text.trim());
+    if (!text.trim()) {
+      setAlreadyExists(false);
+      return;
+    }
+    const fullUrl = padUrl(text.trim());
+    const urlExists = existingUrls.some((url) => url === fullUrl);
+    setAlreadyExists(urlExists);
+  }
 
   async function getExtractedTitle(url: string) {
     setInputUrl(url);
@@ -34,14 +58,6 @@ export default function Search({
     console.log(metadata);
     setIsProcessing(false);
     return metadata.title;
-  }
-
-  function padUrl(url: string) {
-    if (url.startsWith("https://") || url.startsWith("http://")) {
-      return url;
-    } else {
-      return `https://${url}`;
-    }
   }
 
   function getFaviconUrl(url: string): string {
@@ -64,6 +80,11 @@ export default function Search({
     if (!urlText) return;
 
     const fullUrl = padUrl(urlText);
+
+    // Don't allow adding if URL already exists
+    if (existingUrls.some((url) => url === fullUrl)) {
+      return;
+    }
     const pendingId = crypto.randomUUID();
 
     // Clear the editor immediately
@@ -94,6 +115,7 @@ export default function Search({
     // Remove pending bookmark after save
     onBookmarkSaved?.(pendingId);
     setInputUrl("");
+    setAlreadyExists(false);
   }
 
   return (
@@ -110,9 +132,17 @@ export default function Search({
           ref={editorRef}
           className="w-full max-w-[90%]"
           onSubmit={handleSubmit}
+          onTextChange={handleTextChange}
         />
       </div>
-      <div className="flex items-center justify-end">
+      <div className="flex items-center justify-between">
+        <p
+          className={`text-[#FD2B38]/87 text-[13.5px] font-[410] antialiased font-rounded rounded-full px-3 py-1 bg-[#FD2B38]/10 translate-y-1 ${
+            alreadyExists ? "opacity-100 blur-0" : "opacity-0 blur-[2px]"
+          } transition-all duration-150`}
+        >
+          Already Exists
+        </p>
         <div
           className={`rounded-full cursor-pointer p-1.25 transition-colors`}
           style={{
