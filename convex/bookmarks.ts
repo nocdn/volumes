@@ -13,13 +13,19 @@ export const updateBookmark = mutation({
     id: v.id("bookmarks"),
     title: v.optional(v.string()),
     url: v.optional(v.string()),
+    tags: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
     const { id, ...updates } = args;
     // Filter out undefined values
-    const filteredUpdates: { title?: string; url?: string; favicon?: string } =
-      {};
+    const filteredUpdates: {
+      title?: string;
+      url?: string;
+      favicon?: string;
+      tags?: string[];
+    } = {};
     if (updates.title !== undefined) filteredUpdates.title = updates.title;
+    if (updates.tags !== undefined) filteredUpdates.tags = updates.tags;
     if (updates.url !== undefined) {
       filteredUpdates.url = updates.url;
       // Update favicon if URL changed

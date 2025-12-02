@@ -6,7 +6,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Maximize, TextCursorInput } from "lucide-react";
+import { Maximize, TextCursorInput, Tag } from "lucide-react";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
@@ -61,6 +61,7 @@ export default function BookmarkItem({
   );
   const [optimisticTitle, setOptimisticTitle] = useState<string | null>(null);
   const [optimisticUrl, setOptimisticUrl] = useState<string | null>(null);
+  const [optimisticTags, setOptimisticTags] = useState<string[] | null>(null);
 
   const updateBookmark = useMutation(api.bookmarks.updateBookmark);
 
@@ -77,9 +78,19 @@ export default function BookmarkItem({
     }
   }, [bookmark.url, optimisticUrl]);
 
+  useEffect(() => {
+    if (
+      optimisticTags !== null &&
+      JSON.stringify(bookmark.tags) === JSON.stringify(optimisticTags)
+    ) {
+      setOptimisticTags(null);
+    }
+  }, [bookmark.tags, optimisticTags]);
+
   const menuItems = [
     { id: "title", label: "Title", icon: TextCursorInput },
     { id: "url", label: "Edit URL", icon: Maximize },
+    { id: "tags", label: "Edit Tags", icon: Tag },
   ] as const;
 
   // Reset selection when popover opens
@@ -146,8 +157,29 @@ export default function BookmarkItem({
     [bookmark._id, updateBookmark]
   );
 
+  const handleSaveTags = useCallback(
+    async (tagsString: string) => {
+      const newTags = tagsString
+        .split(",")
+        .map((tag) => tag.trim().toLowerCase())
+        .filter((tag) => tag.length > 0);
+      setOptimisticTags(newTags);
+      try {
+        await updateBookmark({
+          id: bookmark._id as Id<"bookmarks">,
+          tags: newTags,
+        });
+      } catch (error) {
+        console.error("Failed to update tags:", error);
+        setOptimisticTags(null);
+      }
+    },
+    [bookmark._id, updateBookmark]
+  );
+
   const displayTitle = optimisticTitle ?? bookmark.title;
   const displayUrl = optimisticUrl ?? bookmark.url;
+  const displayTags = optimisticTags ?? bookmark.tags;
 
   return (
     <motion.div
@@ -191,6 +223,17 @@ export default function BookmarkItem({
               onSave={handleSaveUrl}
               onHover={() => setSelectedIndex(1)}
               onClose={() => handleOpenChange(false)}
+            />
+            <EditableMenuItem
+              icon={Tag}
+              label="Edit Tags"
+              value={displayTags.map((t) => t.toLowerCase()).join(", ")}
+              isSelected={selectedIndex === 2}
+              onSave={handleSaveTags}
+              onHover={() => setSelectedIndex(2)}
+              onClose={() => handleOpenChange(false)}
+              iconSize={13.75}
+              iconClassName="translate-x-0.25"
             />
           </div>
         </PopoverContent>

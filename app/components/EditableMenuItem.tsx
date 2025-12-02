@@ -11,6 +11,8 @@ interface EditableMenuItemProps {
   onSave: (newValue: string) => void;
   onHover: () => void;
   onClose?: () => void;
+  iconSize?: number;
+  iconClassName?: string;
 }
 
 export default function EditableMenuItem({
@@ -21,6 +23,8 @@ export default function EditableMenuItem({
   onSave,
   onHover,
   onClose,
+  iconSize = 16,
+  iconClassName,
 }: EditableMenuItemProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(value);
@@ -46,6 +50,7 @@ export default function EditableMenuItem({
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter") {
       e.preventDefault();
+      e.stopPropagation();
       const trimmed = editValue.trim();
       if (trimmed && trimmed !== value) {
         onSave(trimmed);
@@ -53,6 +58,7 @@ export default function EditableMenuItem({
       }
       setIsEditing(false);
     } else if (e.key === "Escape") {
+      e.stopPropagation();
       setEditValue(value);
       setIsEditing(false);
     }
@@ -73,7 +79,11 @@ export default function EditableMenuItem({
       onMouseEnter={onHover}
       onClick={!isEditing ? handleClick : undefined}
     >
-      <Icon size={16} strokeWidth={2.5} className="shrink-0" />
+      <Icon
+        size={iconSize}
+        strokeWidth={2.5}
+        className={`shrink-0 ${iconClassName}`}
+      />
       {isEditing ? (
         <input
           ref={inputRef}
