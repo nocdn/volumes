@@ -14,6 +14,18 @@ interface PendingBookmark {
   favicon: string;
 }
 
+interface CachedBookmark {
+  _id: string;
+  _creationTime: number;
+  url: string;
+  title: string;
+  favicon: string;
+  tags: string[];
+  comment?: string;
+}
+
+const BOOKMARKS_CACHE_KEY = "bookmarks_cache";
+
 // Fuzzy match: checks if all characters in query appear in order within target
 function fuzzyMatch(query: string, target: string): boolean {
   const q = query.toLowerCase();
@@ -51,8 +63,10 @@ function bookmarkMatchesQuery(
 }
 
 export default function Home() {
-  const bookmarks = useQuery(api.bookmarks.list);
+  const serverBookmarks = useQuery(api.bookmarks.list);
   const deleteBookmark = useMutation(api.bookmarks.deleteBookmark);
+  const [cachedBookmarks, setCachedBookmarks] = useState<CachedBookmark[]>([]);
+  const [hasCacheLoaded, setHasCacheLoaded] = useState(false);
   const [pendingBookmarks, setPendingBookmarks] = useState<PendingBookmark[]>(
     []
   );
@@ -62,8 +76,40 @@ export default function Home() {
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
   const [isKeyboardNav, setIsKeyboardNav] = useState(false);
 
+  // Load cached bookmarks on mount
+  useEffect(() => {
+    try {
+      const cached = localStorage.getItem(BOOKMARKS_CACHE_KEY);
+      if (cached) {
+        setCachedBookmarks(JSON.parse(cached));
+      }
+    } catch (e) {
+      console.error("Failed to load cached bookmarks:", e);
+    }
+    setHasCacheLoaded(true);
+  }, []);
+
+  // Save bookmarks to cache when server data arrives
+  useEffect(() => {
+    if (serverBookmarks) {
+      try {
+        localStorage.setItem(
+          BOOKMARKS_CACHE_KEY,
+          JSON.stringify(serverBookmarks)
+        );
+        setCachedBookmarks(serverBookmarks as CachedBookmark[]);
+      } catch (e) {
+        console.error("Failed to cache bookmarks:", e);
+      }
+    }
+  }, [serverBookmarks]);
+
+  // Use server bookmarks if available, otherwise use cached
+  const bookmarks = serverBookmarks ?? (hasCacheLoaded ? cachedBookmarks : []);
+  const isRefreshing = hasCacheLoaded && !serverBookmarks;
+
   const filteredBookmarks = useMemo(() => {
-    if (!bookmarks) return [];
+    if (!bookmarks || bookmarks.length === 0) return [];
     const filtered = bookmarks.filter(
       (bookmark: any) =>
         !deletedIds.has(bookmark._id) &&
@@ -143,6 +189,7 @@ export default function Home() {
         onBookmarkSaved={removePendingBookmark}
         existingUrls={bookmarks?.map((b: any) => b.url) ?? []}
         onSearchChange={setSearchQuery}
+        isRefreshing={isRefreshing}
       />
       <div className="flex flex-col gap-4 w-[50%] px-1">
         {pendingBookmarks.map((pending) => (
@@ -166,6 +213,7 @@ export default function Home() {
           <BookmarkItem
             key={bookmark._id}
             bookmark={bookmark}
+            index={index}
             isDimmed={activeMenuId !== null && activeMenuId !== bookmark._id}
             isSelected={selectedIndex === index}
             onMenuOpenChange={(isOpen) =>

@@ -18,6 +18,7 @@ interface SearchProps {
   onBookmarkSaved?: (id: string) => void;
   existingUrls?: string[];
   onSearchChange?: (query: string) => void;
+  isRefreshing?: boolean;
 }
 
 export default function Search({
@@ -25,6 +26,7 @@ export default function Search({
   onBookmarkSaved,
   existingUrls = [],
   onSearchChange,
+  isRefreshing = false,
 }: SearchProps) {
   const [inputUrl, setInputUrl] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
@@ -150,7 +152,7 @@ export default function Search({
           }}
         >
           <AnimatePresence mode="popLayout">
-            {!isProcessing ? (
+            {!isProcessing && !isRefreshing ? (
               <motion.div
                 key={"plus"}
                 initial={{ scale: 0.5, opacity: 0, filter: "blur(1px)" }}
@@ -177,6 +179,7 @@ export default function Search({
                 <Loader
                   className="ml-auto rounded-full animate-spin"
                   size={19}
+                  color="#B4B4B4"
                 />
               </motion.div>
             )}

@@ -23,6 +23,7 @@ interface BookmarkItemProps {
     tags: string[];
     comment?: string;
   };
+  index?: number;
   isDimmed?: boolean;
   isSelected?: boolean;
   onMenuOpenChange?: (isOpen: boolean) => void;
@@ -46,6 +47,7 @@ function formatCreationDate(timestamp: number): string {
 
 export default function BookmarkItem({
   bookmark,
+  index = 0,
   isDimmed = false,
   isSelected = false,
   onMenuOpenChange,
@@ -192,6 +194,9 @@ export default function BookmarkItem({
 
   return (
     <motion.div
+      initial={{ opacity: 0, filter: "blur(1px)" }}
+      animate={{ opacity: 1, filter: "blur(0px)" }}
+      transition={{ duration: 0.15, delay: index * 0.02 }}
       className={`flex items-center gap-2 -mx-3 px-3 -my-2 py-2 [corner-shape:squircle] rounded-[1.5rem] ${
         isDimmed ? "opacity-[0.65]" : ""
       } ${isSelected && !isOpen ? "bg-[#EDEDED]" : ""} ${!isOpen ? "hover:bg-[#EDEDED]" : ""}`}
@@ -260,7 +265,7 @@ export default function BookmarkItem({
         <span className="invisible">
           {formatCreationDate(bookmark._creationTime)}
         </span>
-        <AnimatePresence mode="popLayout">
+        <AnimatePresence mode="popLayout" initial={false}>
           {isHoveringDate ? (
             <motion.span
               key="delete"
