@@ -57,6 +57,53 @@ export const deleteBookmark = mutation({
   },
 });
 
+// Bulk import from Supabase JSON export
+export const importBookmarks = mutation({
+  args: {
+    bookmarks: v.array(
+      v.object({
+        title: v.string(),
+        url: v.string(),
+        tags: v.string(), // JSON string like "[\"tag1\",\"tag2\"]"
+      })
+    ),
+  },
+  handler: async (ctx, args) => {
+    function getHostname(input: string): string | null {
+      try {
+        const url = new URL(input.includes("://") ? input : `https://${input}`);
+        return url.hostname;
+      } catch {
+        return null;
+      }
+    }
+
+    function buildFaviconUrl(domain: string | null): string {
+      if (!domain) {
+        return "https://www.google.com/s2/favicons?domain=example.com&sz=128";
+      }
+      return `https://icons.duckduckgo.com/ip3/${encodeURIComponent(domain)}.ico`;
+    }
+
+    let imported = 0;
+    for (const bookmark of args.bookmarks) {
+      const hostname = getHostname(bookmark.url);
+      const faviconUrl = buildFaviconUrl(hostname);
+      const tags = JSON.parse(bookmark.tags) as string[];
+
+      await ctx.db.insert("bookmarks", {
+        url: bookmark.url,
+        title: bookmark.title,
+        tags: tags,
+        favicon: faviconUrl,
+      });
+      imported++;
+    }
+
+    return { imported };
+  },
+});
+
 export const createBookmark = mutation({
   args: {
     url: v.string(),

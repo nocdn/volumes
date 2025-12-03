@@ -73,6 +73,7 @@ export default forwardRef<unknown, EditorProps>(
 
     const editor = useEditor({
       immediatelyRender: false,
+      shouldRerenderOnTransaction: false,
       extensions: [
         Document,
         Paragraph,
@@ -98,30 +99,31 @@ export default forwardRef<unknown, EditorProps>(
       },
       content: "",
       onUpdate: ({ editor }) => {
-        // Extract text content (before mentions) similar to submit logic
-        const { doc } = editor.state;
-        const items: { type: "text" | "mention"; content: string }[] = [];
+        // Fast path: get plain text and find first mention marker
+        const textContent = editor.getText();
 
-        doc.descendants((node) => {
-          if (node.type.name === "mention") {
-            items.push({ type: "mention", content: node.attrs.id });
-          } else if (node.isText && node.text) {
-            items.push({ type: "text", content: node.text });
+        // Check if there are any mentions by looking at the JSON structure
+        const json = editor.getJSON();
+        const content = json.content?.[0]?.content ?? [];
+
+        // Find first mention index in the content array
+        let firstMentionPos = -1;
+        let charCount = 0;
+
+        for (const node of content) {
+          if (node.type === "mention") {
+            firstMentionPos = charCount;
+            break;
+          } else if (node.type === "text" && node.text) {
+            charCount += node.text.length;
           }
-        });
+        }
 
-        const firstMentionIdx = items.findIndex(
-          (item) => item.type === "mention"
-        );
-
-        let text = "";
-        items.forEach((item, idx) => {
-          if (item.type === "text") {
-            if (firstMentionIdx === -1 || idx < firstMentionIdx) {
-              text += item.content;
-            }
-          }
-        });
+        // Extract text before first mention (or all text if no mentions)
+        const text =
+          firstMentionPos === -1
+            ? textContent
+            : textContent.slice(0, firstMentionPos);
 
         onTextChange?.(text.trim());
       },

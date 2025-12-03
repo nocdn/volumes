@@ -1,5 +1,5 @@
 import { Search as SearchIcon, Plus, Loader } from "lucide-react";
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { getPageMetadata } from "../actions";
 import { useMutation } from "convex/react";
@@ -41,17 +41,22 @@ export default function Search({
     }
   }
 
-  function handleTextChange(text: string) {
-    setInputUrl(text);
-    onSearchChange?.(text.trim());
-    if (!text.trim()) {
-      setAlreadyExists(false);
-      return;
-    }
-    const fullUrl = padUrl(text.trim());
-    const urlExists = existingUrls.some((url) => url === fullUrl);
-    setAlreadyExists(urlExists);
-  }
+  // Memoize existingUrls as a Set for O(1) lookup
+  const existingUrlsSet = useMemo(() => new Set(existingUrls), [existingUrls]);
+
+  const handleTextChange = useCallback(
+    (text: string) => {
+      setInputUrl(text);
+      onSearchChange?.(text.trim());
+      if (!text.trim()) {
+        setAlreadyExists(false);
+        return;
+      }
+      const fullUrl = padUrl(text.trim());
+      setAlreadyExists(existingUrlsSet.has(fullUrl));
+    },
+    [onSearchChange, existingUrlsSet]
+  );
 
   async function getExtractedTitle(url: string) {
     setInputUrl(url);
